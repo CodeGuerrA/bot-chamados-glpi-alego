@@ -1,0 +1,65 @@
+services:
+  chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chatbot-glpi
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
+      - SERVER_PORT=8082
+
+      # Redis
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+
+      # Evolution API
+      - EVOLUTION_API_URL=http://evolution-api:8080
+      - EVOLUTION_API_KEY=BAD6E24564F8-4388-B3F6-F523B4A9F127
+      - EVOLUTION_API_INSTANCE=chatbot
+
+      # GLPI API
+      - GLPI_API_URL=${GLPI_API_URL:-}
+      - GLPI_API_APP_TOKEN=${GLPI_API_APP_TOKEN:-}
+      - GLPI_API_USER_TOKEN=${GLPI_API_USER_TOKEN:-}
+
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - chatbot-network
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    container_name: chatbot-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
+    volumes:
+      - redis_data:/data
+    networks:
+      - chatbot-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  chatbot-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local
