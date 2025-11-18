@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class CollectingLocationState implements ChatState{
+public class CollectingLocationState implements ChatState {
     private final LocateValidatorPort locateValidatorPort;
     private final UpdateSummaryBuilderPort updateSummaryBuilderPort;
 
@@ -17,7 +17,7 @@ public class CollectingLocationState implements ChatState{
     @Override
     public String handleMessage(ConversationState state, String message) {
         LocateValidatorPort.ValidationResult validation = locateValidatorPort.validate(message);
-        if(!validation.isValid()){
+        if (!validation.isValid()) {
             return validation.errorMessage();
         }
         state.addData("locate", message);
@@ -27,8 +27,15 @@ public class CollectingLocationState implements ChatState{
 
         state.setCurrentState(StateEnum.COLLECTING_RAMAL);
         String currentRamal = state.getData("ramal");
-        return "Local foi registrado!\n"+
-                "Por favor, informe o ramal" +
-                (currentRamal !=null ? "\nRamal atual: "  + currentRamal : "\n Digite o ramal correto pfv: ");
+        return """
+                ✅ Ótimo! O local foi registrado com sucesso. 😊
+                
+                Agora preciso que você me informe o *número do seu ramal* para continuar.
+                
+                """ + (currentRamal != null
+                ? "📝 O ramal informado até agora é: " + currentRamal +
+                "\nSe estiver tudo certinho, podemos seguir. Caso queira corrigir, é só digitar o ramal correto."
+                : "Por favor, digite o número do seu ramal para continuarmos:");
+
     }
 }

@@ -16,7 +16,8 @@ import java.util.Set;
 @Slf4j
 @Component
 public class HelpCommandHandler implements GlobalCommandHandler {
-
+    //adicionar dps um if ou outro comando para verificar qual e o state que ele esta, dependendo do estate o usuario tera um comando personalizado de ajuda
+    //para ajudar ele a preencher os dados caso tiver duvidas, caso nao cosneguir fazer nenhum dos questionarios, peça para digitar cancelar e contate o suporte 3018
     private static final Set<String> HELP_COMMANDS = Set.of("ajuda", "help", "?");
 
     @Override
@@ -29,11 +30,11 @@ public class HelpCommandHandler implements GlobalCommandHandler {
 
         String helpMessage = """
                 *Comandos disponíveis:*
-
+                
                 - *voltar* - Volta para a etapa anterior
                 - *ajuda* ou *?* - Mostra esta mensagem
                 - *cancelar* - Cancela a conversa atual
-
+                
                 *Dicas:*
                 - Digite *oi* para iniciar um novo chamado
                 - Na confirmação, use *voltar <campo>* para editar (ex: voltar descrição)

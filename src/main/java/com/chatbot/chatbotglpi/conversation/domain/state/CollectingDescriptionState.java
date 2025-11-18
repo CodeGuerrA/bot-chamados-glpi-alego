@@ -8,13 +8,13 @@ import com.chatbot.chatbotglpi.conversation.application.port.input.UpdateSummary
 import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 import com.chatbot.chatbotglpi.conversation.domain.enums.StateEnum;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
  * Estado de coleta de descrição.
- * SRP - única responsabilidade de coletar e validar descrição.
- * DIP - depende de abstrações (ports).
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class CollectingDescriptionState implements ChatState {
@@ -34,11 +34,14 @@ public class CollectingDescriptionState implements ChatState {
         }
 
         // 2. Salva descrição
+        // A descrição salva aqui é a original do usuário, sem Local/Ramal.
         state.addData("description", message);
 
-        // 3. Gera título automaticamente (DIP - via abstração)
+        // 3. Gera título automaticamente
+        // O título é gerado APENAS pela frase natural (message), sem Local/Ramal.
         String titulo = titleGenerator.generateTitle(message);
         state.addData("title", titulo);
+        log.debug("Esse e o titulo nao sei se ta formado: " + titulo);
 
         if (handleReturnAfterEdit(state)) {
             return "Descrição atualizada. Voltando para confirmação do chamado. \n " + updateSummaryBuilderPort.build(state);
@@ -51,9 +54,15 @@ public class CollectingDescriptionState implements ChatState {
         String currentLocate = state.getData("locate");
 //        String categoryOptions = categoryMapper.getAvailableOptions();
 
-        return "Descrição registrada!\n" +
-                "Por favor informe o local exato onde o problema está ocorrendo?(sala,gabinete)\n" +
-//                categoryOptions +
-                (currentLocate != null ? "\nLocal atual: " + currentLocate : "\nDigite o local correto: ");
+        return """
+                ✅ Prontinho! Já registrei a descrição do problema. 😊
+                
+                Agora preciso saber *onde* exatamente o problema está acontecendo.
+                Pode ser, por exemplo: sala, gabinete, setor, recepção…
+                
+                """ + (currentLocate != null
+                ? "📝 Local informado até agora: " + currentLocate + "\nSe quiser atualizar, basta enviar o local correto:"
+                : "Por favor, me diga o local exato onde o problema está acontecendo:");
+
     }
 }

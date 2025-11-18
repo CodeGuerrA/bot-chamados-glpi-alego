@@ -1,13 +1,14 @@
 package com.chatbot.chatbotglpi.integration.evolution;
 
-import com.chatbot.chatbotglpi.integration.dto.SendMessageRequest;
-import com.chatbot.chatbotglpi.integration.dto.SendMessageResponse;
+import com.chatbot.chatbotglpi.integration.evolution.dto.SendMessageRequest;
+import com.chatbot.chatbotglpi.integration.evolution.dto.SendMessageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -15,14 +16,8 @@ public class EvolutionClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${evolution.api.url}")
-    private String evolutionApiUrl;
 
-    @Value("${evolution.api.key}")
-    private String evolutionApiKey;
-
-    @Value("${evolution.api.instance}")
-    private String evolutionInstance;
+    private final EvolutionPropertiesClient evolutionPropertiesClient;
 
     /**
      * Envia mensagem de texto via Evolution API
@@ -34,8 +29,8 @@ public class EvolutionClient {
 
             // Monta a URL: https://api.com/message/sendText/INSTANCE_NAME
             String url = String.format("%s/message/sendText/%s",
-                    evolutionApiUrl,
-                    evolutionInstance
+                    evolutionPropertiesClient.getApiUrl(),
+                    evolutionPropertiesClient.getApiInstance()
             );
 
             // Cria request
@@ -48,7 +43,7 @@ public class EvolutionClient {
             // Cria headers com autenticação
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("apikey", evolutionApiKey);
+            headers.set("apikey", evolutionPropertiesClient.getApiKey());
 
             // Cria entidade HTTP
             HttpEntity<SendMessageRequest> entity = new HttpEntity<>(request, headers);

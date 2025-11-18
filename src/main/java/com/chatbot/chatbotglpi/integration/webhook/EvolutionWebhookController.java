@@ -1,7 +1,7 @@
 package com.chatbot.chatbotglpi.integration.webhook;
 
 import com.chatbot.chatbotglpi.conversation.application.facade.ChatbotFacade;
-import com.chatbot.chatbotglpi.integration.dto.WebhookEvent;
+import com.chatbot.chatbotglpi.integration.evolution.dto.WebhookEvent;
 import com.chatbot.chatbotglpi.integration.evolution.EvolutionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,10 +32,10 @@ public class EvolutionWebhookController {
             }
 
             // Ignora mensagens enviadas pelo próprio bot
-//            if (event.isFromMe()) {
-//                log.debug("Mensagem enviada pelo bot, ignorando");
-//                return ResponseEntity.ok().build();
-//            }
+            if (event.isFromMe()) {
+                log.debug("Mensagem enviada pelo bot, ignorando");
+                return ResponseEntity.ok().build();
+            }
 
             // Extrai dados da mensagem
             String phone = event.getPhoneNumber();

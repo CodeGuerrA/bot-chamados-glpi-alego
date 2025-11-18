@@ -1,5 +1,5 @@
 package com.chatbot.chatbotglpi.integration.evolution;
-import com.chatbot.chatbotglpi.integration.dto.SendMessageResponse;
+import com.chatbot.chatbotglpi.integration.evolution.dto.SendMessageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.annotation.Backoff;

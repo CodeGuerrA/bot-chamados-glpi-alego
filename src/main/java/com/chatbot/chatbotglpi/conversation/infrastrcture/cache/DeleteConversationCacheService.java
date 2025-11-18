@@ -11,7 +11,8 @@ import org.springframework.stereotype.Service;
 
 import static com.chatbot.chatbotglpi.shared.config.CacheConfig.CONVERSATION_CACHE;
 
-@Service//é semântica: indica que a classe fornece algum serviço / operação de negócio ou infraestrutura, mesmo que seja cache ou persistência.
+@Service
+//é semântica: indica que a classe fornece algum serviço / operação de negócio ou infraestrutura, mesmo que seja cache ou persistência.
 @RequiredArgsConstructor
 @Slf4j
 public class DeleteConversationCacheService {

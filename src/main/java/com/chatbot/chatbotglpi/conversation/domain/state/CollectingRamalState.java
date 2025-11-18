@@ -35,6 +35,19 @@ public class CollectingRamalState implements ChatState {
         state.setCurrentState(StateEnum.CONFIRMING);
 
         // 4. Retorna resumo para confirmação
-        return "Ramal registrado!\n" + summaryBuilderPort.build(state);
+        return String.format("""
+                ✅ Perfeito! O ramal foi registrado com sucesso. 😊
+                
+                Aqui está um resumo de tudo que informamos até agora:
+                
+                %s
+                
+                ✔ Se estiver tudo certo, digite *SIM* para confirmar a abertura do chamado.
+                ✏ Se quiser corrigir alguma informação, digite: *voltar <campo>*
+                  (Exemplo: voltar ramal, voltar local, voltar descrição)
+                
+                Estou aqui para te ajudar! 😊
+                """, summaryBuilderPort.build(state));
+
     }
 }

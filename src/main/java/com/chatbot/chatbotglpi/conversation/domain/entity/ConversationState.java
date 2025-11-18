@@ -56,6 +56,9 @@ public class ConversationState implements Serializable { // Representa o estado 
         // Retorna o valor se o mapa existir, senão retorna null
         return this.data != null ? this.data.get(key) : null;
     }
+    public void setData(String key, String value) {
+        this.data.put(key, value);
+    }
 
     // --------------------------------------------------------
     // Verifica se um dado específico existe no mapa
@@ -69,6 +72,7 @@ public class ConversationState implements Serializable { // Representa o estado 
     public boolean isComplete() {
         // Checa se título, descrição, categoria e urgência estão presentes
         return hasData("title") &&
+                hasData("username")&&
                 hasData("description") &&
                 hasData("locate") &&
                 hasData("ramal");

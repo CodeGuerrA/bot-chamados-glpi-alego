@@ -1,4 +1,4 @@
-package com.chatbot.chatbotglpi.integration.dto;
+package com.chatbot.chatbotglpi.integration.evolution.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;

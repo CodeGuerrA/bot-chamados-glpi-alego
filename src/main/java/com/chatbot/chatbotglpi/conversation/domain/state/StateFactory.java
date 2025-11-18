@@ -48,6 +48,7 @@ public class StateFactory {
 
         return switch (className) {
             case "GreetingState" -> StateEnum.GREETING;
+            case "CollectionUsernameState" -> StateEnum.COLLECTING_USERNAME;
             case "CollectingDescriptionState" -> StateEnum.COLLECTING_DESCRIPTION;
             case "CollectingLocationState" -> StateEnum.COLLECTING_LOCATION;
             case "CollectingRamalState" -> StateEnum.COLLECTING_RAMAL;

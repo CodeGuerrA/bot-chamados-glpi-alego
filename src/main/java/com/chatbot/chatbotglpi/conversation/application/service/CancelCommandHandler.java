@@ -19,6 +19,7 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+//arrumar isso daqui dps sobre isso de cancelar.
 public class CancelCommandHandler implements GlobalCommandHandler {
 
     private static final Set<String> CANCEL_COMMANDS = Set.of("cancelar", "/cancelar", "cancel", "NÃO", "nao", "não");

@@ -1,4 +1,4 @@
-package com.chatbot.chatbotglpi.integration.dto;
+package com.chatbot.chatbotglpi.integration.evolution.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

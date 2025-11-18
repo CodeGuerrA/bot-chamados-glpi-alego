@@ -4,6 +4,8 @@ import com.chatbot.chatbotglpi.conversation.application.port.output.Conversation
 import com.chatbot.chatbotglpi.conversation.application.port.output.TicketGateway;
 import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 import com.chatbot.chatbotglpi.conversation.domain.enums.StateEnum;
+import com.chatbot.chatbotglpi.integration.glpi.GlpiService;
+import com.chatbot.chatbotglpi.integration.glpi.dto.CreateTicketResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class CreateTicketUseCase {
 
     private final TicketGateway ticketGateway;
+    private final GlpiService glpiService;
     private final ConversationStateRepository conversationRepository;
 
     public String execute(ConversationState state) {
@@ -29,9 +32,10 @@ public class CreateTicketUseCase {
                 log.warn("Dados incompletos para criação de ticket: {}", state.getPhone());
                 return "Não foi possível criar o chamado. Dados incompletos. Digite *oi* para começar novamente.";
             }
-
             // Cria ticket via gateway
-            Long ticketId = ticketGateway.createTicket(state);
+            CreateTicketResponse ticketResponse = glpiService.createTicketFromConversation(state);
+            Integer ticketId = ticketResponse.getId();
+
 
             // Marca conversa como completa
             state.setCurrentState(StateEnum.COMPLETED);
@@ -47,15 +51,21 @@ public class CreateTicketUseCase {
         }
     }
 
-    private String buildSuccessMessage(Long ticketId, ConversationState state) {
+    private String buildSuccessMessage(Integer ticketId, ConversationState state) {
+        // Adiciona Local e Ramal dentro da descrição
+        String descriptionWithLocation = String.format("%s (Local: %s, Ramal: %s)",
+                state.getData("description"),
+                state.getData("locate"),
+                state.getData("ramal"));
+
         return String.format("""
                 Chamado criado com sucesso!
                 Número: #%d
                 Título: %s
                 Descrição: %s
                 Status: Em análise
-                Aguarde que um tecnico ira no local.
+                Aguarde que um técnico irá no local.
                 Digite *oi* para abrir um novo chamado.
-                """, ticketId, state.getData("title"), state.getData("description"));
+                """, ticketId, state.getData("title"), descriptionWithLocation);
     }
 }

@@ -7,6 +7,7 @@ package com.chatbot.chatbotglpi.conversation.domain.enums;
 public enum StateEnum {
     GREETING,
     COLLECTING_DESCRIPTION,
+    COLLECTING_USERNAME,
     COLLECTING_CATEGORY,
     COLLECTING_URGENCY,
     CONFIRMING,

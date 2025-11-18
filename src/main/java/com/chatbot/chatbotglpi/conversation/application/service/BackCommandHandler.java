@@ -5,6 +5,7 @@ import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 import com.chatbot.chatbotglpi.conversation.domain.enums.StateEnum;
 import com.chatbot.chatbotglpi.conversation.domain.helper.StateNavigationHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -12,7 +13,7 @@ import java.util.Optional;
 /**
  * Handler para o comando "voltar".
  * OCP - pode ser estendido para novos comandos sem modificar código existente.
- * SRP - única responsabilidade: processar comando de voltar.é um componente responsável por processar um tipo específico de evento, comando, requisição ou mensagem dentro de um sistema.
+ * SRP - única responsabilidade: processar comando de voltar.
  */
 @Slf4j
 @Component
@@ -22,10 +23,26 @@ public class BackCommandHandler implements GlobalCommandHandler {
 
     @Override
     public Optional<String> handle(String message, ConversationState state) {
-        if (!isGlobalCommand(message)) {
+        if (message == null || message.trim().isEmpty()) {
             return Optional.empty();
         }
 
+        String cleanedMessage = message.trim();
+
+        // Checa digitação aproximada (até 2 erros)
+        LevenshteinDistance distance = new LevenshteinDistance();
+        int diff = distance.apply(cleanedMessage.toLowerCase(), BACK_COMMAND);
+
+        if (diff <= 2 && !cleanedMessage.equalsIgnoreCase(BACK_COMMAND)) {
+            return Optional.of("Parece que você tentou digitar 'voltar'. Por favor, digite *voltar* corretamente.");
+        }
+
+        // Se não é o comando "voltar" exato, ignora
+        if (!cleanedMessage.equalsIgnoreCase(BACK_COMMAND)) {
+            return Optional.empty();
+        }
+
+        // Processa comando correto
         log.info("Processando comando 'voltar' para {}", state.getPhone());
 
         StateEnum currentState = state.getCurrentState();
@@ -45,6 +62,15 @@ public class BackCommandHandler implements GlobalCommandHandler {
 
     @Override
     public boolean isGlobalCommand(String message) {
-        return message != null && message.trim().equalsIgnoreCase(BACK_COMMAND);
+        if (message == null || message.trim().isEmpty()) return false;
+
+        String cleaned = message.trim();
+
+        // Comando exato
+        if (cleaned.equalsIgnoreCase(BACK_COMMAND)) return true;
+
+        // Digitação aproximada (até 2 erros) Com o Levenshtein, qualquer mensagem que tenha até 2 diferenças em relação a "voltar" é reconhecida como tentativa do comando.
+        LevenshteinDistance distance = new LevenshteinDistance();
+        return distance.apply(cleaned.toLowerCase(), BACK_COMMAND) <= 2;
     }
 }
