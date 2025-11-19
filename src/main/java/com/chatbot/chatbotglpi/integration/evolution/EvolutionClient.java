@@ -1,10 +1,12 @@
 package com.chatbot.chatbotglpi.integration.evolution;
 
+import com.chatbot.chatbotglpi.conversation.infrastrcture.metrics.BotMetrics;
 import com.chatbot.chatbotglpi.integration.evolution.dto.SendMessageRequest;
 import com.chatbot.chatbotglpi.integration.evolution.dto.SendMessageResponse;
+import com.chatbot.chatbotglpi.integration.evolution.exception.EvolutionApiException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -15,13 +17,14 @@ import org.springframework.web.client.RestTemplate;
 public class EvolutionClient {
 
     private final RestTemplate restTemplate;
-
-
     private final EvolutionPropertiesClient evolutionPropertiesClient;
+    private final BotMetrics botMetrics;
 
     /**
-     * Envia mensagem de texto via Evolution API
+     * Envia mensagem de texto via Evolution API.
+     * Circuit Breaker protege contra falhas quando Evolution API está indisponível.
      */
+    @CircuitBreaker(name = "evolution", fallbackMethod = "sendTextMessageFallback")
     public SendMessageResponse sendTextMessage(String phoneNumber, String message) {
         try {
             // Remove caracteres especiais do número (apenas dígitos)
@@ -61,7 +64,18 @@ public class EvolutionClient {
 
         } catch (Exception e) {
             log.error("Erro ao enviar mensagem via Evolution API para {}: ", phoneNumber, e);
-            throw new RuntimeException("Falha ao enviar mensagem WhatsApp", e);
+            botMetrics.recordEvolutionError("send_message");
+            throw new EvolutionApiException("Falha ao enviar mensagem WhatsApp", e);
         }
+    }
+
+    /**
+     * Fallback method quando Evolution API está indisponível
+     */
+    private SendMessageResponse sendTextMessageFallback(String phoneNumber, String message, Exception e) {
+        log.error("Circuit Breaker ATIVO - Evolution API temporariamente indisponível. Telefone: {}. Erro: {}",
+                  phoneNumber, e.getMessage());
+        botMetrics.recordEvolutionError("circuit_breaker_open");
+        throw new EvolutionApiException("Sistema de mensagens temporariamente indisponível. Mensagem não enviada.", e);
     }
 }

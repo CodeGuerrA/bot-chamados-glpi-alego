@@ -1,6 +1,11 @@
 package com.chatbot.chatbotglpi.integration.glpi;
 
+import com.chatbot.chatbotglpi.conversation.infrastrcture.metrics.BotMetrics;
 import com.chatbot.chatbotglpi.integration.glpi.dto.*;
+import com.chatbot.chatbotglpi.integration.glpi.exception.GlpiInvalidResponseException;
+import com.chatbot.chatbotglpi.integration.glpi.exception.GlpiTicketCreationException;
+import com.chatbot.chatbotglpi.integration.glpi.session.GlpiSessionManager;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -10,134 +15,71 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Optional;
 
+/**
+ * Cliente GLPI para operações de tickets.
+ * SRP - Responsável apenas por operações de criação de tickets.
+ * Gerenciamento de sessões delegado para GlpiSessionManager.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GlpiClient {
 
     private final RestTemplate restTemplate;
-
-
-
     private final GlpiPropertiesClient glpiPropertiesClient;
+    private final GlpiSessionManager sessionManager;
+    private final BotMetrics botMetrics;
 
     /**
-     * Inicia sessão no GLPI e retorna o session token
+     * Cria um ticket no GLPI usando gerenciamento automático de sessão.
+     * Circuit Breaker protege contra falhas em cascata quando GLPI está indisponível.
      */
-    public String initSession() {
-        // *** LOG DE DEBUG PARA DIAGNÓSTICO ***
-        log.debug("Configuração glpiApiUrl: {}",glpiPropertiesClient.getApiUrl());
+    @CircuitBreaker(name = "glpi", fallbackMethod = "createTicketFallback")
+    public CreateTicketResponse createTicket(CreateTicketRequest request) throws Exception {
+        return sessionManager.executeWithSession(sessionToken -> {
+            try {
+                String url = UriComponentsBuilder.fromHttpUrl(glpiPropertiesClient.getApiUrl().trim())
+                        .pathSegment("Ticket")
+                        .toUriString();
 
-        try {
-            // 1. CONSTRUÇÃO DA URL COM URI COMPONENTS BUILDER (fromUriString é a versão mais recente)
-            String url = UriComponentsBuilder.fromUriString(glpiPropertiesClient.getApiUrl().trim())
-                    .pathSegment("initSession")
-                    .toUriString();
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                headers.set("App-Token", glpiPropertiesClient.getApiAppToken());
+                headers.set("Session-Token", sessionToken);
 
-            // *** LOG DE DEBUG PARA DIAGNÓSTICO ***
-            log.debug("URL final para initSession: {}", url);
+                GlpiTicketPayload payload = new GlpiTicketPayload(request);
+                HttpEntity<GlpiTicketPayload> entity = new HttpEntity<>(payload, headers);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("App-Token", glpiPropertiesClient.getApiAppToken());
-            headers.set("Authorization", "user_token " + glpiPropertiesClient.getApiUserToken());
+                ResponseEntity<CreateTicketResponse> response = restTemplate.exchange(
+                        url,
+                        HttpMethod.POST,
+                        entity,
+                        CreateTicketResponse.class
+                );
 
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+                CreateTicketResponse ticketResponse = Optional.ofNullable(response.getBody())
+                        .orElseThrow(() -> new GlpiInvalidResponseException("Resposta da API GLPI vazia ou inválida ao criar ticket."));
 
-            ResponseEntity<GlpiSessionResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    GlpiSessionResponse.class
-            );
+                log.info("Ticket GLPI criado: #{}", ticketResponse.getId());
+                return ticketResponse;
 
-            // Tratamento de NPE: Verifica se o corpo da resposta existe
-            String sessionToken = Optional.ofNullable(response.getBody())
-                    .map(GlpiSessionResponse::getSessionToken)
-                    .orElseThrow(() -> new RuntimeException("Resposta da API GLPI vazia ou inválida ao iniciar sessão."));
-
-            log.debug("Sessão GLPI iniciada: {}", sessionToken);
-            return sessionToken;
-
-        } catch (Exception e) {
-            log.error("Erro ao iniciar sessão GLPI", e);
-            throw new RuntimeException("Falha ao autenticar no GLPI", e);
-        }
-    }
-
-    /**
-     * Encerra sessão no GLPI
-     */
-    public void killSession(String sessionToken) {
-        try {
-            String url = UriComponentsBuilder.fromUriString(glpiPropertiesClient.getApiUrl().trim())
-                    .pathSegment("killSession")
-                    .toUriString();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("App-Token", glpiPropertiesClient.getApiAppToken());
-            headers.set("Session-Token", sessionToken);
-
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-            restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-            log.debug("Sessão GLPI encerrada");
-
-        } catch (Exception e) {
-            log.warn("Erro ao encerrar sessão GLPI (não crítico)", e);
-        }
-    }
-
-    /**
-     * Cria um ticket no GLPI
-     */
-    public CreateTicketResponse createTicket(CreateTicketRequest request) {
-        String sessionToken = null;
-
-        try {
-            // 1. Inicia sessão
-            sessionToken = initSession();
-
-            // 2. Cria ticket
-            String url = UriComponentsBuilder.fromUriString(glpiPropertiesClient.getApiUrl().trim())
-                    .pathSegment("Ticket")
-                    .toUriString();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("App-Token", glpiPropertiesClient.getApiAppToken());
-            headers.set("Session-Token", sessionToken);
-
-            // *** CORREÇÃO APLICADA AQUI ***
-            // 1. Crie o objeto de payload que envolve sua requisição original.
-            GlpiTicketPayload payload = new GlpiTicketPayload(request);
-
-            // 2. Use o novo payload para criar a entidade da requisição.
-            HttpEntity<GlpiTicketPayload> entity = new HttpEntity<>(payload, headers);
-
-            ResponseEntity<CreateTicketResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    entity,
-                    CreateTicketResponse.class
-            );
-
-            CreateTicketResponse ticketResponse = Optional.ofNullable(response.getBody())
-                    .orElseThrow(() -> new RuntimeException("Resposta da API GLPI vazia ou inválida ao criar ticket."));
-
-            log.info("Ticket GLPI criado: #{}", ticketResponse.getId());
-            return ticketResponse;
-
-        } catch (Exception e) {
-            log.error("Erro ao criar ticket no GLPI", e);
-            throw new RuntimeException("Falha ao criar ticket no GLPI", e);
-
-        } finally {
-            // 3. Sempre encerra sessão
-            if (sessionToken != null) {
-                killSession(sessionToken);
+            } catch (GlpiInvalidResponseException e) {
+                botMetrics.recordGlpiError("create_ticket");
+                throw e;
+            } catch (Exception e) {
+                log.error("Erro ao criar ticket no GLPI", e);
+                botMetrics.recordGlpiError("create_ticket");
+                throw new GlpiTicketCreationException("Falha ao criar ticket no GLPI", e);
             }
-        }
+        });
     }
 
+    /**
+     * Fallback method quando GLPI está indisponível
+     */
+    private CreateTicketResponse createTicketFallback(CreateTicketRequest request, Exception e) {
+        log.error("Circuit Breaker ATIVO - GLPI temporariamente indisponível. Erro: {}", e.getMessage());
+        botMetrics.recordGlpiError("circuit_breaker_open");
+        throw new GlpiTicketCreationException("Sistema GLPI temporariamente indisponível. Por favor, tente novamente em alguns minutos.", e);
+    }
 }

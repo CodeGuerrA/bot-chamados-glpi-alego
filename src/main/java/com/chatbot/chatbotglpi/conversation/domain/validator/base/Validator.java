@@ -1,12 +1,7 @@
-package com.chatbot.chatbotglpi.conversation.application.port.input;
+package com.chatbot.chatbotglpi.conversation.domain.validator.base;
 
-/**
- * Port para validação de descrição.
- * ISP - interface segregada para validação específica.
- */
-public interface DescriptionValidatorPort {
-
-    ValidationResult validate(String description);
+public interface Validator<T> {
+    ValidationResult validate(T value);
 
     record ValidationResult(boolean isValid, String errorMessage) {
         public static ValidationResult valid() {

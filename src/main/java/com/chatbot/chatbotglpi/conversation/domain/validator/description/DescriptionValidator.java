@@ -1,6 +1,6 @@
-package com.chatbot.chatbotglpi.conversation.domain.service;
+package com.chatbot.chatbotglpi.conversation.domain.validator.description;
 
-import com.chatbot.chatbotglpi.conversation.application.port.input.DescriptionValidatorPort;
+import com.chatbot.chatbotglpi.conversation.domain.validator.base.Validator;
 import com.chatbot.chatbotglpi.shared.config.ChatbotProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class DescriptionValidatorService implements DescriptionValidatorPort {
+public class DescriptionValidator implements Validator<String> {
 
     private final ChatbotProperties chatbotProperties;
 
@@ -23,6 +23,7 @@ public class DescriptionValidatorService implements DescriptionValidatorPort {
 
         int minLength = chatbotProperties.getValidation().getDescription().getMinLength();
         int maxLength = chatbotProperties.getValidation().getDescription().getMaxLength();
+
 
         if (description.length() < minLength) {
             return ValidationResult.invalid(

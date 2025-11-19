@@ -4,6 +4,7 @@ import com.chatbot.chatbotglpi.conversation.application.port.input.GlobalCommand
 import com.chatbot.chatbotglpi.conversation.application.port.output.ConversationStateRepository;
 import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 import com.chatbot.chatbotglpi.conversation.domain.enums.StateEnum;
+import com.chatbot.chatbotglpi.conversation.infrastrcture.metrics.BotMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ public class CancelCommandHandler implements GlobalCommandHandler {
     private static final Set<String> CANCEL_COMMANDS = Set.of("cancelar", "/cancelar", "cancel", "NÃO", "nao", "não");
 
     private final ConversationStateRepository conversationRepository;
+    private final BotMetrics botMetrics;
 
     @Override
     public Optional<String> handle(String message, ConversationState state) {
@@ -34,6 +36,9 @@ public class CancelCommandHandler implements GlobalCommandHandler {
 
         log.info("Comando 'cancelar' processado para {}", state.getPhone());
 
+        // Registra métrica de conversa cancelada
+        botMetrics.recordConversationCancelled();
+
         // Deleta conversa do repositório
         conversationRepository.delete(state.getPhone());
 
@@ -41,9 +46,14 @@ public class CancelCommandHandler implements GlobalCommandHandler {
         state.setCurrentState(StateEnum.COMPLETED);
 
         return Optional.of("""
-                Conversa cancelada.
+                ❌ *Conversa cancelada com sucesso!*
 
-                Digite *oi* para começar novamente.
+                Todos os dados foram removidos do sistema.
+
+                📞 *Precisa de ajuda pessoal?*
+                Ligue para o suporte no ramal *3018*
+
+                💬 Digite *oi* quando quiser abrir um novo chamado.
                 """);
     }
 

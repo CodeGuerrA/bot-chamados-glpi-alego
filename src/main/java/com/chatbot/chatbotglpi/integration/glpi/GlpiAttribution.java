@@ -1,5 +1,7 @@
 package com.chatbot.chatbotglpi.integration.glpi;
 
+import com.chatbot.chatbotglpi.integration.glpi.enums.GlpiUserType;
+import com.chatbot.chatbotglpi.integration.glpi.session.GlpiSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,28 +16,29 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Serviço para atribuir tickets a usuários no GLPI.
+ * SRP - Responsável apenas por atribuições de tickets.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class GlpiAttribution {
 
     private final RestTemplate restTemplate;
-    private final GlpiClient glpiClient; // Necessário para gerenciar a sessão
+    private final GlpiSessionManager sessionManager;
     private final GlpiPropertiesClient glpiPropertiesClient;
     /**
-     * Atribui um ticket a um usuário no GLPI como solicitante (type=1).
+     * Atribui um ticket a um usuário no GLPI como solicitante.
+     * Usa gerenciamento automático de sessão.
      *
      * @param ticketId O ID do ticket a ser atribuído.
      * @param userId O ID do usuário a quem o ticket será atribuído.
      */
-    public void assignTicketToUser(Integer ticketId, Integer userId) {
-        // 1. Inicia sessão para obter o token dinâmico
-        String sessionToken = glpiClient.initSession();
-
-        try {
-            // URL segura usando UriComponentsBuilder
+    public void assignTicketToUser(Integer ticketId, Integer userId) throws Exception {
+        sessionManager.executeWithSession(sessionToken -> {
             String url = UriComponentsBuilder
-                    .fromUriString(glpiPropertiesClient.getApiUrl())
+                    .fromHttpUrl(glpiPropertiesClient.getApiUrl().trim())
                     .pathSegment("Ticket_User")
                     .toUriString();
 
@@ -47,7 +50,7 @@ public class GlpiAttribution {
             Map<String, Object> input = new HashMap<>();
             input.put("tickets_id", ticketId);
             input.put("users_id", userId);
-            input.put("type", 1); // 1 = solicitante (requester)
+            input.put("type", GlpiUserType.SOLICITANTE.getCode());
 
             Map<String, Object> body = new HashMap<>();
             body.put("input", input);
@@ -57,14 +60,12 @@ public class GlpiAttribution {
             ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("Ticket {} atribuído ao usuário {} com sucesso. Status: {}", ticketId, userId, response.getStatusCode());
+                log.info("Ticket {} atribuído ao usuário {} com sucesso", ticketId, userId);
             } else {
-                log.error("Falha ao atribuir ticket {}. Status: {}. Corpo da resposta: {}", ticketId, response.getStatusCode(), response.getBody());
+                log.error("Falha ao atribuir ticket {}. Status: {}", ticketId, response.getStatusCode());
             }
 
-        } finally {
-            // 4. Sempre encerra sessão
-            glpiClient.killSession(sessionToken);
-        }
+            return null; // Void operation
+        });
     }
 }

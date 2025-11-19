@@ -1,8 +1,10 @@
-package com.chatbot.chatbotglpi.conversation.domain.service;
+package com.chatbot.chatbotglpi.conversation.domain.validator.username;
 
-import com.chatbot.chatbotglpi.conversation.application.port.input.UsernameVlidatorPort;
+import com.chatbot.chatbotglpi.conversation.domain.validator.base.Validator;
+import org.springframework.stereotype.Service;
 
-public class UsernameValidatorService implements UsernameVlidatorPort {
+@Service
+public class UsernameValidator implements Validator<String> {
 
     private static final String USERNAME_REGEX = "^[a-zA-ZÀ-ÿ]+\\.[a-zA-ZÀ-ÿ]+(\\d*)?$";
 
@@ -14,7 +16,7 @@ public class UsernameValidatorService implements UsernameVlidatorPort {
         }
 
         if (!username.matches(USERNAME_REGEX)) {
-            return ValidationResult.invalid("Username inválido. Use o formato nome.sobrenome");
+            return ValidationResult.invalid("Formato de username inválido.");
         }
 
         return ValidationResult.valid();

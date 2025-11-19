@@ -13,23 +13,27 @@ public class TicketSummaryBuilderService implements SummaryBuilderPort {
 
     @Override
     public String build(ConversationState state) {
-        // Concatenando local e ramal dentro da descrição
-        String descriptionWithLocation = String.format("%s (Local: %s, Ramal: %s)",
+        return String.format("""
+                        📋 *RESUMO DO CHAMADO*
+                        
+                        👤 *Usuário:*
+                        %s
+                        
+                        📝 *Descrição:*
+                        %s
+                        
+                        📍 *Local:*
+                        %s
+                        
+                        ☎️ *Ramal:*
+                        %s
+                        
+                        ✔️ Se estiver tudo correto, basta confirmar para abrir o chamado.
+                        """,
+                state.getData("username"),
                 state.getData("description"),
                 state.getData("locate"),
-                state.getData("ramal"));
-
-        return String.format("""
-                        📋 *Resumo do Chamado*
-                        
-                        📌 Título: %s
-                        ✍️ Descrição: %s
-                        
-                        ✅ Digite *SIM* para confirmar
-                        ❌ Digite *NÃO* para cancelar
-                        🔙 Digite *voltar <campo>* para editar (ex: voltar descrição)
-                        """,
-                state.getData("title"),
-                descriptionWithLocation);
+                state.getData("ramal")
+        );
     }
 }

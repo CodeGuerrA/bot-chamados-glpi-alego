@@ -2,6 +2,7 @@ package com.chatbot.chatbotglpi.conversation.application.port.output;
 
 import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -16,4 +17,10 @@ public interface ConversationStateRepository {
     ConversationState save(String phone, ConversationState state);
 
     void delete(String phone);
+
+    /**
+     * Busca todas as conversas ativas.
+     * Necessário para verificar timeouts de inatividade.
+     */
+    List<ConversationState> findAll();
 }

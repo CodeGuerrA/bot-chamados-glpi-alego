@@ -1,12 +1,12 @@
-package com.chatbot.chatbotglpi.conversation.domain.service;
+package com.chatbot.chatbotglpi.conversation.domain.validator.ramal;
 
-import com.chatbot.chatbotglpi.conversation.application.port.input.RamalValidatorPort;
+import com.chatbot.chatbotglpi.conversation.domain.validator.base.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class RamalValidatorService implements RamalValidatorPort {
+public class RamalValidator implements Validator<String> {
 
     @Override
     public ValidationResult validate(String ramal) {

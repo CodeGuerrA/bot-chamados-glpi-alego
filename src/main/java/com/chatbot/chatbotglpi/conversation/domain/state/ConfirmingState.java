@@ -23,18 +23,26 @@ public class ConfirmingState implements ChatState {
     private final ConversationStateRepository conversationRepository;
     private final CreateTicketUseCase createTicketUseCase;
 
+    // Mapeamento de campos editáveis por NOME
     private static final Map<String, StateEnum> EDITABLE_FIELDS = Map.of(
             "descrição", StateEnum.COLLECTING_DESCRIPTION,
             "descricao", StateEnum.COLLECTING_DESCRIPTION,
             "local", StateEnum.COLLECTING_LOCATION,
-            "ramal", StateEnum.COLLECTING_RAMAL
-//            "categoria", StateEnum.COLLECTING_CATEGORY,
-//            "urgência", StateEnum.COLLECTING_URGENCY,
-//            "urgencia", StateEnum.COLLECTING_URGENCY
+            "ramal", StateEnum.COLLECTING_RAMAL,
+            "usuario", StateEnum.COLLECTING_USERNAME,
+            "usuário", StateEnum.COLLECTING_USERNAME
     );
 
-    private static final Set<String> CONFIRM_OPTIONS = Set.of("sim", "1");
-    private static final Set<String> CANCEL_OPTIONS = Set.of("não", "nao", "2");
+    // NOVO: Mapeamento de campos editáveis por NÚMERO (Edição Inline)
+    private static final Map<String, StateEnum> EDITABLE_FIELDS_BY_NUMBER = Map.of(
+            "1", StateEnum.COLLECTING_USERNAME,
+            "2", StateEnum.COLLECTING_DESCRIPTION,
+            "3", StateEnum.COLLECTING_LOCATION,
+            "4", StateEnum.COLLECTING_RAMAL
+    );
+
+    private static final Set<String> CONFIRM_OPTIONS = Set.of("sim", "s");
+    private static final Set<String> CANCEL_OPTIONS = Set.of("não", "nao", "n");
 
     @Override
     public String handleMessage(ConversationState state, String message) {
@@ -45,24 +53,62 @@ public class ConfirmingState implements ChatState {
 
         String input = message.trim().toLowerCase();
 
-        // 2. Processa comando de edição (OCP - extensível via mapa)
+        // 2. NOVO: Edição inline por número (1, 2, 3, 4)
+        if (EDITABLE_FIELDS_BY_NUMBER.containsKey(input)) {
+            StateEnum targetState = EDITABLE_FIELDS_BY_NUMBER.get(input);
+            state.setReturnState(StateEnum.CONFIRMING);
+            state.setCurrentState(targetState);
+
+            String fieldName = switch (input) {
+                case "1" -> "usuário";
+                case "2" -> "descrição";
+                case "3" -> "local";
+                case "4" -> "ramal";
+                default -> "campo";
+            };
+
+            return "✏️ Você está editando: *" + fieldName + "*\n\n" +
+                   "Digite o novo valor para este campo:";
+        }
+
+        // 3. Processa comando de edição tradicional (voltar <campo>)
         if (input.startsWith("voltar")) {
             return handleEditCommand(input, state);
         }
 
-        // 3. Confirma criação
+        // 4. Comando de ajuda
+        if (input.equals("/ajuda") || input.equals("ajuda")) {
+            return "❓ *AJUDA - Confirmação*\n\n" +
+                   "*Para confirmar:*\n" +
+                   "→ Digite *SIM* ou *S*\n\n" +
+                   "*Para cancelar:*\n" +
+                   "→ Digite *NÃO* ou *N*\n\n" +
+                   "*Para editar:*\n" +
+                   "→ Digite *1* (usuário), *2* (descrição), *3* (local) ou *4* (ramal)\n\n" +
+                   "Ou use: *voltar descrição*, *voltar local*, *voltar ramal*";
+        }
+
+        // 5. Confirma criação
         if (CONFIRM_OPTIONS.contains(input)) {
             return createTicketUseCase.execute(state);
         }
 
-        // 4. Cancela chamado
+        // 6. Cancela chamado
         if (CANCEL_OPTIONS.contains(input)) {
             conversationRepository.delete(state.getPhone());
-            return "Chamado cancelado.\nDigite *oi* para começar novamente.";
+            return "❌ *Chamado cancelado*\n\n" +
+                   "Todos os dados foram removidos.\n\n" +
+                   "📞 Precisa de ajuda? Ligue *3018*\n" +
+                   "💬 Digite *oi* para abrir novo chamado";
         }
 
-        // 5. Entrada inválida
-        return "Opção inválida. Digite *SIM* para confirmar, *NÃO* para cancelar ou 'voltar <campo>' para editar.";
+        // 7. Entrada inválida
+        return "⚠️ *Opção inválida*\n\n" +
+               "Escolha uma opção:\n\n" +
+               "✅ *SIM* - Confirmar e criar chamado\n" +
+               "❌ *NÃO* - Cancelar tudo\n" +
+               "✏️ *1, 2, 3 ou 4* - Editar campo\n\n" +
+               "💡 Digite */ajuda* para mais detalhes";
     }
 
     private String handleEditCommand(String input, ConversationState state) {

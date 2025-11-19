@@ -1,8 +1,9 @@
 package com.chatbot.chatbotglpi.integration.glpi;
 
+import com.chatbot.chatbotglpi.conversation.infrastrcture.metrics.BotMetrics;
+import com.chatbot.chatbotglpi.integration.glpi.session.GlpiSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -13,23 +14,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Serviço para buscar informações de usuários no GLPI.
+ * SRP - Responsável apenas por operações de busca.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GlpiSearch {
 
     private final RestTemplate restTemplate;
-    private final GlpiClient glpiClient;
-
-
+    private final GlpiSessionManager sessionManager;
     private final GlpiPropertiesClient glpiPropertiesClient;
-    public Integer getUserIdByLogin(String username) {
-        String sessionToken = glpiClient.initSession();
+    private final BotMetrics botMetrics;
 
-        try {
-            // URL segura usando UriComponentsBuilder
+    /**
+     * Busca ID do usuário pelo login/username
+     */
+    public Integer getUserIdByLogin(String username) throws Exception {
+        return sessionManager.executeWithSession(sessionToken -> {
             String url = UriComponentsBuilder
-                    .fromUriString(glpiPropertiesClient.getApiUrl())
+                    .fromHttpUrl(glpiPropertiesClient.getApiUrl().trim())
                     .pathSegment("User")
                     .queryParam("criteria[0][field]", 2)
                     .queryParam("criteria[0][searchtype]", "equals")
@@ -54,22 +59,29 @@ public class GlpiSearch {
 
             List<Map<String, Object>> users = response.getBody();
 
-            if (users != null) {
+            if (users != null && !users.isEmpty()) {
+                log.debug("GLPI retornou {} usuário(s)", users.size());
+
                 for (Map<String, Object> user : users) {
-                    if (Objects.equals(username, user.get("name"))) {
+                    String userName = (String) user.get("name");
+                    log.debug("Comparando: '{}' com '{}'", username, userName);
+
+                    if (username.equalsIgnoreCase(userName)) {
                         Object id = user.get("id");
                         if (id instanceof Number) {
+                            log.info("Usuário {} encontrado com ID: {}", username, id);
                             return ((Number) id).intValue();
                         }
                     }
                 }
+
+                log.warn("Usuário {} não encontrado entre os {} resultados retornados", username, users.size());
+            } else {
+                log.warn("GLPI não retornou nenhum usuário para a busca: {}", username);
             }
 
-            log.warn("Usuário {} não encontrado.", username);
+            botMetrics.recordValidationError("username");
             return null;
-
-        } finally {
-            glpiClient.killSession(sessionToken);
-        }
+        });
     }
 }

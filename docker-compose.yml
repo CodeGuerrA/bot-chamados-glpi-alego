@@ -21,9 +21,9 @@ services:
       - EVOLUTION_API_INSTANCE=chatbot
 
       # GLPI API
-      - GLPI_API_URL=${GLPI_API_URL:-}
-      - GLPI_API_APP_TOKEN=${GLPI_API_APP_TOKEN:-}
-      - GLPI_API_USER_TOKEN=${GLPI_API_USER_TOKEN:-}
+      - GLPI_API_URL=http://glpi-app:80/apirest.php
+      - GLPI_API_APP_TOKEN=PqWPopRVOzq23jaFsZ1aM5ai12QPD0d9YX1XLhqp
+      - GLPI_API_USER_TOKEN=jsDRWbNjeoptyN9wM6RxCZMk1YemNqYLWtyZmHoV
 
     depends_on:
       redis:

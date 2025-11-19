@@ -12,5 +12,5 @@ public interface TicketGateway {
      * Cria um ticket no sistema externo.
      * @return ID do ticket criado
      */
-    Long createTicket(ConversationState state);
+    Long createTicket(ConversationState state) throws Exception;
 }

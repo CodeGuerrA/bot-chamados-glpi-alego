@@ -1,7 +1,10 @@
 package com.chatbot.chatbotglpi.integration.glpi;
 
+import com.chatbot.chatbotglpi.conversation.application.port.output.TicketGateway;
 import com.chatbot.chatbotglpi.integration.glpi.dto.CreateTicketRequest;
 import com.chatbot.chatbotglpi.integration.glpi.dto.CreateTicketResponse;
+import com.chatbot.chatbotglpi.integration.glpi.enums.GlpiTicketStatus;
+import com.chatbot.chatbotglpi.integration.glpi.enums.GlpiTicketType;
 import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,18 +13,27 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GlpiService {
+public class GlpiService implements TicketGateway {
 
     private final GlpiClient glpiClient;
     private final GlpiSearch glpiSearch;
     private final GlpiAttribution glpiAttribution;
 
     /**
-     * Cria um ticket no GLPI a partir dos dados da conversa
-     * Tipo padrão: Requisição (2)
-     * Status padrão: Novo (1)
+     * Implementação do TicketGateway - cria ticket e retorna ID
      */
-    public CreateTicketResponse createTicketFromConversation(ConversationState state) {
+    @Override
+    public Long createTicket(ConversationState state) throws Exception {
+        CreateTicketResponse response = createTicketFromConversation(state);
+        return response.getId().longValue();
+    }
+
+    /**
+     * Cria um ticket no GLPI a partir dos dados da conversa
+     * Tipo padrão: Requisição
+     * Status padrão: Novo
+     */
+    public CreateTicketResponse createTicketFromConversation(ConversationState state) throws Exception {
         // Monta o conteúdo da descrição com Local e Ramal
         String descricao = state.getData("description");
         String local = state.getData("locate");
@@ -35,8 +47,8 @@ public class GlpiService {
         CreateTicketRequest ticketRequest = CreateTicketRequest.builder()
                 .name(titulo)   // título gerado pelo TituloNaturalPTBR
                 .content(content) // descrição completa com local e ramal
-                .type(2)          // 2 = Requisição
-                .status(1)        // 1 = Novo
+                .type(GlpiTicketType.REQUISICAO.getCode())
+                .status(GlpiTicketStatus.NOVO.getCode())
                 .build();
 
         // Cria ticket via cliente GLPI

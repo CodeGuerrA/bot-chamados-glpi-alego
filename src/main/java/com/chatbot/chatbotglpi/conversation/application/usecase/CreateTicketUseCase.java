@@ -4,8 +4,7 @@ import com.chatbot.chatbotglpi.conversation.application.port.output.Conversation
 import com.chatbot.chatbotglpi.conversation.application.port.output.TicketGateway;
 import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 import com.chatbot.chatbotglpi.conversation.domain.enums.StateEnum;
-import com.chatbot.chatbotglpi.integration.glpi.GlpiService;
-import com.chatbot.chatbotglpi.integration.glpi.dto.CreateTicketResponse;
+import com.chatbot.chatbotglpi.conversation.infrastrcture.metrics.BotMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,8 +20,8 @@ import org.springframework.stereotype.Service;
 public class CreateTicketUseCase {
 
     private final TicketGateway ticketGateway;
-    private final GlpiService glpiService;
     private final ConversationStateRepository conversationRepository;
+    private final BotMetrics botMetrics;
 
     public String execute(ConversationState state) {
         log.info("Criando ticket para {}", state.getPhone());
@@ -32,10 +31,16 @@ public class CreateTicketUseCase {
                 log.warn("Dados incompletos para criação de ticket: {}", state.getPhone());
                 return "Não foi possível criar o chamado. Dados incompletos. Digite *oi* para começar novamente.";
             }
-            // Cria ticket via gateway
-            CreateTicketResponse ticketResponse = glpiService.createTicketFromConversation(state);
-            Integer ticketId = ticketResponse.getId();
+            // Cria ticket via gateway (agora usando abstração)
+            Long ticketId = ticketGateway.createTicket(state);
 
+            // Registra métrica de conversa completada
+            botMetrics.recordConversationCompleted();
+
+            // TODO: Registrar duração da conversa quando adicionar campo createdAt em ConversationState
+            // if (state.getCreatedAt() != null) {
+            //     botMetrics.recordConversationDuration(state.getCreatedAt(), LocalDateTime.now());
+            // }
 
             // Marca conversa como completa
             state.setCurrentState(StateEnum.COMPLETED);
@@ -51,21 +56,45 @@ public class CreateTicketUseCase {
         }
     }
 
-    private String buildSuccessMessage(Integer ticketId, ConversationState state) {
-        // Adiciona Local e Ramal dentro da descrição
-        String descriptionWithLocation = String.format("%s (Local: %s, Ramal: %s)",
+    private String buildSuccessMessage(Long ticketId, ConversationState state) {
+        return String.format("""
+                ✅ *Chamado criado com sucesso!*
+
+                ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+                ┃   📋 CHAMADO #%d
+                ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+                📌 *Título*
+                   %s
+
+                📝 *Descrição*
+                   %s
+
+                📍 *Local*
+                   %s
+
+                📞 *Ramal*
+                   %s
+
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                ⏳ *Status:* Em análise
+
+                👨‍💻 *Próximos passos:*
+                Um técnico irá analisar seu chamado e entrar em contato em breve.
+
+                Você receberá notificações sobre atualizações no chamado.
+
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                💬 Digite *oi* para abrir novo chamado
+                📞 Dúvidas? Ligue *3018*
+                """,
+                ticketId,
+                state.getData("title"),
                 state.getData("description"),
                 state.getData("locate"),
-                state.getData("ramal"));
-
-        return String.format("""
-                Chamado criado com sucesso!
-                Número: #%d
-                Título: %s
-                Descrição: %s
-                Status: Em análise
-                Aguarde que um técnico irá no local.
-                Digite *oi* para abrir um novo chamado.
-                """, ticketId, state.getData("title"), descriptionWithLocation);
+                state.getData("ramal")
+        );
     }
 }

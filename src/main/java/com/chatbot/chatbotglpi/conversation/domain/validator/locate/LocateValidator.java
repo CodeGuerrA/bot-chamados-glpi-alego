@@ -1,12 +1,12 @@
-package com.chatbot.chatbotglpi.conversation.domain.service;
+package com.chatbot.chatbotglpi.conversation.domain.validator.locate;
 
-import com.chatbot.chatbotglpi.conversation.application.port.input.LocateValidatorPort;
+import com.chatbot.chatbotglpi.conversation.domain.validator.base.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class LocateValidatorService implements LocateValidatorPort {
+public class LocateValidator implements Validator<String> {
 
     @Override
     public ValidationResult validate(String locate) {

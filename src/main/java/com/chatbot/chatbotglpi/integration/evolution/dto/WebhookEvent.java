@@ -72,4 +72,10 @@ public class WebhookEvent {
     public boolean isFromMe() {
         return data != null && data.key != null && data.key.fromMe;
     }
+
+    // Método auxiliar para extrair o ID único da mensagem (para idempotência)
+    public String getMessageId() {
+        if (data == null || data.key == null) return null;
+        return data.key.id;
+    }
 }

@@ -1,12 +1,11 @@
 package com.chatbot.chatbotglpi.conversation.domain.state;
 
-//import com.chatbot.chatbotglpi.conversation.application.port.input.CategoryMapperPort;
-
-import com.chatbot.chatbotglpi.conversation.application.port.input.DescriptionValidatorPort;
 import com.chatbot.chatbotglpi.conversation.application.port.input.TitleGeneratorPort;
 import com.chatbot.chatbotglpi.conversation.application.port.input.UpdateSummaryBuilderPort;
 import com.chatbot.chatbotglpi.conversation.domain.entity.ConversationState;
 import com.chatbot.chatbotglpi.conversation.domain.enums.StateEnum;
+import com.chatbot.chatbotglpi.conversation.domain.validator.base.Validator;
+import com.chatbot.chatbotglpi.conversation.domain.validator.description.DescriptionValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,32 +18,37 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CollectingDescriptionState implements ChatState {
 
-    private final DescriptionValidatorPort descriptionValidator;
     private final TitleGeneratorPort titleGenerator;
     private final UpdateSummaryBuilderPort updateSummaryBuilderPort;
-
+    private final DescriptionValidator descriptionValidator;
 //    private final CategoryMapperPort categoryMapper;
 
     @Override
     public String handleMessage(ConversationState state, String message) {
+        // Comando de ajuda contextual
+        if (message.trim().equalsIgnoreCase("/ajuda") || message.trim().equalsIgnoreCase("ajuda")) {
+            return getHelpMessage();
+        }
+
         // 1. Valida descrição (DIP - via abstração)
-        DescriptionValidatorPort.ValidationResult validation = descriptionValidator.validate(message);
-        if (!validation.isValid()) {
-            return validation.errorMessage();
+        Validator.ValidationResult validationResult = descriptionValidator.validate(message);
+        if (!validationResult.isValid()) {
+            return validationResult.errorMessage() + "\n\n" +
+                    "💡 *Dica:* Digite */ajuda* para ver exemplos de como descrever.";
         }
 
         // 2. Salva descrição
-        // A descrição salva aqui é a original do usuário, sem Local/Ramal.
         state.addData("description", message);
 
         // 3. Gera título automaticamente
-        // O título é gerado APENAS pela frase natural (message), sem Local/Ramal.
         String titulo = titleGenerator.generateTitle(message);
         state.addData("title", titulo);
-        log.debug("Esse e o titulo nao sei se ta formado: " + titulo);
+        log.debug("Título gerado automaticamente: {}", titulo);
 
         if (handleReturnAfterEdit(state)) {
-            return "Descrição atualizada. Voltando para confirmação do chamado. \n " + updateSummaryBuilderPort.build(state);
+            return "✅ Descrição atualizada com sucesso!\n\n" +
+                    "Voltando para confirmação do chamado...\n\n" +
+                    updateSummaryBuilderPort.build(state);
         }
 
         // 4. Avança para próximo estado
@@ -52,17 +56,34 @@ public class CollectingDescriptionState implements ChatState {
 
         // 5. Monta resposta
         String currentLocate = state.getData("locate");
-//        String categoryOptions = categoryMapper.getAvailableOptions();
 
         return """
-                ✅ Prontinho! Já registrei a descrição do problema. 😊
+                ✅ Descrição registrada com sucesso!
                 
-                Agora preciso saber *onde* exatamente o problema está acontecendo.
-                Pode ser, por exemplo: sala, gabinete, setor, recepção…
+                🔍 *Título:* %s
                 
-                """ + (currentLocate != null
-                ? "📝 Local informado até agora: " + currentLocate + "\nSe quiser atualizar, basta enviar o local correto:"
-                : "Por favor, me diga o local exato onde o problema está acontecendo:");
+                Agora preciso saber *onde o problema está acontecendo*.
+                
+                %s
+                """.formatted(
+                titulo,
+                currentLocate != null
+                        ? "📍 Local atual: " + currentLocate + "\n\nSe quiser mudar, basta informar o novo local. 😊"
+                        : "Por favor, informe o local (ex: sala 101, gabinete 5, recepção).\n\n💡 Digite */ajuda* se precisar de exemplos."
+        );
 
+    }
+
+    private String getHelpMessage() {
+        return "❓ *AJUDA - Descrição*\n\n" +
+                "*Bons exemplos:*\n" +
+                "→ ```Computador não liga```\n" +
+                "→ ```Internet está lenta```\n" +
+                "→ ```Impressora travando papel```\n" +
+                "→ ```Sistema não abre```\n\n" +
+                "*Evite:*\n" +
+                "→ Muito curto: ```problema```\n" +
+                "→ Muito longo (+ de 500 caracteres)\n\n" +
+                "Quanto mais claro, mais rápido resolveremos!";
     }
 }
