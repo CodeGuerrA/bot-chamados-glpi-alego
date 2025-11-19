@@ -585,23 +585,7 @@ Status: ✅ APROVADO (dentro dos limites)
 ### Equipe de Desenvolvimento
 
 **Desenvolvedor Principal:**
-- Carlos Garcia - Arquiteto de Soluções e Desenvolvedor Full Stack
-
-**Colaboradores:**
-- Equipe de Infraestrutura - Configuração de servidores e redes
-- Equipe de Segurança da Informação - Revisão de segurança e compliance
-- Help Desk - Feedback e requisitos de negócio
-
-### Comitê de Governança
-
-**Aprovações e Validações:**
-- ✅ Gerência de TI - Aprovação técnica
-- ✅ Diretoria de TI - Aprovação estratégica
-- ✅ Segurança da Informação - Compliance e LGPD
-- ✅ Comitê de Transformação Digital - Alinhamento estratégico
-
----
-
+- Carlos Garcia - Arquiteto de Soluções e Desenvolvedor
 ## 📞 Suporte e Contato
 
 ### Canais de Suporte
