@@ -97,11 +97,11 @@ public class EvolutionWebhookController {
                 return ResponseEntity.ok("Invalid data");
             }
 
-            // 6. Ignora mensagens enviadas pelo próprio bot
-            if (event.isFromMe()) {
-                log.debug("Mensagem enviada pelo bot, ignorando");
-                return ResponseEntity.ok("Message from bot ignored");
-            }
+//            // 6. Ignora mensagens enviadas pelo próprio bot
+//            if (event.isFromMe()) {
+//                log.debug("Mensagem enviada pelo bot, ignorando");
+//                return ResponseEntity.ok("Message from bot ignored");
+//            }
 
             log.info("Processando mensagem de {}: {}", phone, message);
 

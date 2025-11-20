@@ -56,45 +56,45 @@ public class CreateTicketUseCase {
         }
     }
 
+    //arrumar isso daqui com a interface build que tenho
     private String buildSuccessMessage(Long ticketId, ConversationState state) {
         return String.format("""
-                ✅ *Chamado criado com sucesso!*
-
-                ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-                ┃   📋 CHAMADO #%d
-                ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-
-                📌 *Título*
-                   %s
-
-                📝 *Descrição*
-                   %s
-
-                📍 *Local*
-                   %s
-
-                📞 *Ramal*
-                   %s
-
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-                ⏳ *Status:* Em análise
-
-                👨‍💻 *Próximos passos:*
-                Um técnico irá analisar seu chamado e entrar em contato em breve.
-
-                Você receberá notificações sobre atualizações no chamado.
-
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-                💬 Digite *oi* para abrir novo chamado
-                📞 Dúvidas? Ligue *3018*
-                """,
+                        ✅ *Chamado criado com sucesso!*
+                        
+                        📋 *Número do Chamado:* #%d
+                        
+                        📌 *Título:*
+                           %s
+                        
+                        📝 *Descrição:*
+                           %s
+                        
+                        📍 *Localização:*
+                           %s
+                        
+                        📞 *Ramal de contato:*
+                           %s
+                        
+                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        
+                        ⏳ *Status:* Em análise
+                        
+                        👨‍💻 *Próximos passos:*
+                         Um técnico irá ao local para resolver o chamado.
+                        
+                        🔔 Você receberá notificações sobre qualquer atualização do chamado.
+                        
+                        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                        
+                        💬 Para abrir um novo chamado, digite *oi*
+                        📞 Em caso de dúvidas, ligue para *3018*
+                        """,
                 ticketId,
                 state.getData("title"),
                 state.getData("description"),
                 state.getData("locate"),
                 state.getData("ramal")
         );
+
     }
 }

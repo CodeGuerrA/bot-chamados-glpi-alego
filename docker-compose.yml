@@ -25,6 +25,10 @@ services:
       - GLPI_API_APP_TOKEN=PqWPopRVOzq23jaFsZ1aM5ai12QPD0d9YX1XLhqp
       - GLPI_API_USER_TOKEN=jsDRWbNjeoptyN9wM6RxCZMk1YemNqYLWtyZmHoV
 
+      # Webhook Security (HMAC-SHA256) - Apenas Evolution
+      - EVOLUTION_WEBHOOK_SECRET=${EVOLUTION_WEBHOOK_SECRET:-7225f25357a4dd9162c6eeebcc857a8ad30f23c18d6fcdd8401e59376c35e8fd}
+      - WEBHOOK_SECURITY_ENABLED=${WEBHOOK_SECURITY_ENABLED:-true}
+
     depends_on:
       redis:
         condition: service_healthy
