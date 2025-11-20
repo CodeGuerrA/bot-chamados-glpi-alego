@@ -17,10 +17,6 @@ import org.springframework.web.bind.annotation.*;
  * - Ticket resolvido
  * - Ticket fechado
  * - Comentário adicionado
- *
- * Segurança:
- * - Idempotência (previne processamento duplicado)
- * - Recomenda-se IP whitelist para ambientes de produção
  */
 @Slf4j
 @RestController
